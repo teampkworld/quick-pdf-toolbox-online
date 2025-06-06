@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Document, Page } from 'react-pdf';
+import { Page } from 'react-pdf';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, RotateCw, Trash2 } from 'lucide-react';
@@ -30,6 +30,19 @@ const PDFPageThumbnail = ({
   className
 }: PDFPageThumbnailProps) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const handleLoadSuccess = () => {
+    console.log(`Page ${pageNumber} loaded successfully`);
+    setIsLoading(false);
+    setHasError(false);
+  };
+
+  const handleLoadError = (error: any) => {
+    console.error(`Error loading page ${pageNumber}:`, error);
+    setIsLoading(false);
+    setHasError(true);
+  };
 
   return (
     <Card className={cn(
@@ -38,18 +51,25 @@ const PDFPageThumbnail = ({
       className
     )}>
       <div className="relative">
-        <Page
-          pageNumber={pageNumber}
-          width={150}
-          renderTextLayer={false}
-          renderAnnotationLayer={false}
-          onLoadSuccess={() => setIsLoading(false)}
-          loading={
-            <div className="w-[150px] h-[200px] bg-muted animate-pulse rounded flex items-center justify-center">
-              <span className="text-sm text-muted-foreground">Loading...</span>
-            </div>
-          }
-        />
+        {hasError ? (
+          <div className="w-[150px] h-[200px] bg-muted rounded flex items-center justify-center">
+            <span className="text-sm text-muted-foreground">Failed to load</span>
+          </div>
+        ) : (
+          <Page
+            pageNumber={pageNumber}
+            width={150}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            onLoadSuccess={handleLoadSuccess}
+            onLoadError={handleLoadError}
+            loading={
+              <div className="w-[150px] h-[200px] bg-muted animate-pulse rounded flex items-center justify-center">
+                <span className="text-sm text-muted-foreground">Loading...</span>
+              </div>
+            }
+          />
+        )}
         
         {/* Page number overlay */}
         <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">

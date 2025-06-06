@@ -5,7 +5,11 @@ import PDFPageThumbnail from './PDFPageThumbnail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, FileText } from 'lucide-react';
-import '../lib/pdfWorker';
+import { pdfjs } from '../lib/pdfWorker';
+
+// Configure react-pdf options
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 
 interface PDFPreviewProps {
   file: File;
@@ -31,8 +35,23 @@ const PDFPreview = ({
   const [numPages, setNumPages] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fileUrl, setFileUrl] = useState<string>('');
+
+  useEffect(() => {
+    // Create object URL for the file
+    const url = URL.createObjectURL(file);
+    setFileUrl(url);
+    
+    // Cleanup on unmount
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [file]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    console.log('PDF loaded successfully with', numPages, 'pages');
     setNumPages(numPages);
     setIsLoading(false);
     setError(null);
@@ -112,10 +131,15 @@ const PDFPreview = ({
           </div>
         ) : (
           <Document
-            file={file}
+            file={fileUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             loading=""
+            options={{
+              cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+              cMapPacked: true,
+              standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+            }}
           >
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {Array.from(new Array(numPages), (el, index) => (
