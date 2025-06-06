@@ -1,22 +1,36 @@
-
 import { useState, useCallback } from "react";
 import { Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import PDFPreview from "./PDFPreview";
 
 interface PDFUploaderProps {
   onFileSelect: (file: File) => void;
   acceptMultiple?: boolean;
   maxFiles?: number;
   className?: string;
+  showPreview?: boolean;
+  previewMode?: 'view' | 'select' | 'rotate' | 'delete' | 'reorder';
+  selectedPages?: number[];
+  onPageSelect?: (pageNumber: number) => void;
+  onPageRotate?: (pageNumber: number) => void;
+  onPageDelete?: (pageNumber: number) => void;
+  onPagesReorder?: (newOrder: number[]) => void;
 }
 
 const PDFUploader = ({ 
   onFileSelect, 
   acceptMultiple = false, 
   maxFiles = 1,
-  className = "" 
+  className = "",
+  showPreview = true,
+  previewMode = 'view',
+  selectedPages = [],
+  onPageSelect,
+  onPageRotate,
+  onPageDelete,
+  onPagesReorder
 }: PDFUploaderProps) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -131,7 +145,7 @@ const PDFUploader = ({
         </CardContent>
       </Card>
 
-      {selectedFiles.length > 0 && (
+      {selectedFiles.length > 0 && !showPreview && (
         <div className="space-y-2">
           <h4 className="font-medium">Selected Files:</h4>
           {selectedFiles.map((file, index) => (
@@ -155,6 +169,24 @@ const PDFUploader = ({
                 </Button>
               </div>
             </Card>
+          ))}
+        </div>
+      )}
+
+      {/* PDF Preview */}
+      {selectedFiles.length > 0 && showPreview && (
+        <div className="space-y-4">
+          {selectedFiles.map((file, index) => (
+            <PDFPreview
+              key={index}
+              file={file}
+              mode={previewMode}
+              selectedPages={selectedPages}
+              onPageSelect={onPageSelect}
+              onPageRotate={onPageRotate}
+              onPageDelete={onPageDelete}
+              onPagesReorder={onPagesReorder}
+            />
           ))}
         </div>
       )}

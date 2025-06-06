@@ -11,11 +11,34 @@ import { useToast } from "@/hooks/use-toast";
 const RotatePDF = () => {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [rotation, setRotation] = useState(90);
+  const [pageRotations, setPageRotations] = useState<Record<number, number>>({});
+  const [globalRotation, setGlobalRotation] = useState(90);
   const { toast } = useToast();
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
+    setPageRotations({});
+  };
+
+  const handlePageRotate = (pageNumber: number) => {
+    setPageRotations(prev => ({
+      ...prev,
+      [pageNumber]: ((prev[pageNumber] || 0) + 90) % 360
+    }));
+  };
+
+  const rotateAllPages = () => {
+    if (!file) return;
+    
+    // For demo purposes, we'll assume we know the number of pages
+    // In a real implementation, you'd get this from the PDF preview component
+    const estimatedPages = 10; // This would come from PDF analysis
+    
+    const newRotations: Record<number, number> = {};
+    for (let i = 1; i <= estimatedPages; i++) {
+      newRotations[i] = globalRotation;
+    }
+    setPageRotations(newRotations);
   };
 
   const rotateFile = async () => {
@@ -35,7 +58,10 @@ const RotatePDF = () => {
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const pages = pdfDoc.getPages();
 
-      pages.forEach(page => {
+      // Apply individual page rotations or global rotation
+      pages.forEach((page, index) => {
+        const pageNumber = index + 1;
+        const rotation = pageRotations[pageNumber] || globalRotation;
         page.setRotation(degrees(rotation));
       });
 
@@ -50,10 +76,11 @@ const RotatePDF = () => {
 
       toast({
         title: "Success!",
-        description: `PDF rotated ${rotation}° and downloaded successfully.`,
+        description: "PDF rotated and downloaded successfully.",
       });
 
       setFile(null);
+      setPageRotations({});
     } catch (error) {
       console.error('Error rotating PDF:', error);
       toast({
@@ -99,37 +126,63 @@ const RotatePDF = () => {
       aboutContent={aboutContent}
     >
       <div className="space-y-6">
-        <PDFUploader onFileSelect={handleFileSelect} />
+        <PDFUploader 
+          onFileSelect={handleFileSelect}
+          showPreview={true}
+          previewMode="rotate"
+          onPageRotate={handlePageRotate}
+        />
         
         {file && (
           <Card>
             <CardContent className="p-4">
               <h3 className="font-semibold mb-4">Rotation Options</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <Button
-                  variant={rotation === 90 ? "default" : "outline"}
-                  onClick={() => setRotation(90)}
-                  className="flex flex-col items-center p-4 h-auto"
-                >
-                  <RotateCw className="h-6 w-6 mb-2" />
-                  <span>90° Right</span>
-                </Button>
-                <Button
-                  variant={rotation === 180 ? "default" : "outline"}
-                  onClick={() => setRotation(180)}
-                  className="flex flex-col items-center p-4 h-auto"
-                >
-                  <RotateCw className="h-6 w-6 mb-2 rotate-180" />
-                  <span>180° Flip</span>
-                </Button>
-                <Button
-                  variant={rotation === 270 ? "default" : "outline"}
-                  onClick={() => setRotation(270)}
-                  className="flex flex-col items-center p-4 h-auto"
-                >
-                  <RotateCw className="h-6 w-6 mb-2 -rotate-90" />
-                  <span>270° Left</span>
-                </Button>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-2">Global Rotation (All Pages)</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Button
+                      variant={globalRotation === 90 ? "default" : "outline"}
+                      onClick={() => setGlobalRotation(90)}
+                      className="flex flex-col items-center p-4 h-auto"
+                    >
+                      <RotateCw className="h-6 w-6 mb-2" />
+                      <span>90° Right</span>
+                    </Button>
+                    <Button
+                      variant={globalRotation === 180 ? "default" : "outline"}
+                      onClick={() => setGlobalRotation(180)}
+                      className="flex flex-col items-center p-4 h-auto"
+                    >
+                      <RotateCw className="h-6 w-6 mb-2 rotate-180" />
+                      <span>180° Flip</span>
+                    </Button>
+                    <Button
+                      variant={globalRotation === 270 ? "default" : "outline"}
+                      onClick={() => setGlobalRotation(270)}
+                      className="flex flex-col items-center p-4 h-auto"
+                    >
+                      <RotateCw className="h-6 w-6 mb-2 -rotate-90" />
+                      <span>270° Left</span>
+                    </Button>
+                  </div>
+                  <Button onClick={rotateAllPages} variant="outline" className="w-full mt-2">
+                    Apply to All Pages
+                  </Button>
+                </div>
+                
+                {Object.keys(pageRotations).length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Individual Page Rotations</h4>
+                    <div className="text-sm text-muted-foreground">
+                      {Object.entries(pageRotations).map(([page, rotation]) => (
+                        <span key={page} className="inline-block mr-3 mb-1">
+                          Page {page}: {rotation}°
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

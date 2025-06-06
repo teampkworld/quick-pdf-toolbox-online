@@ -1,38 +1,45 @@
-
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { PDFDocument } from "pdf-lib";
 import PDFToolTemplate from "@/components/PDFToolTemplate";
 import PDFUploader from "@/components/PDFUploader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 const RemovePages = () => {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [pagesToRemove, setPagesToRemove] = useState('');
+  const [pagesToRemove, setPagesToRemove] = useState<number[]>([]);
   const { toast } = useToast();
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
+    setPagesToRemove([]);
+  };
+
+  const handlePageDelete = (pageNumber: number) => {
+    setPagesToRemove(prev => 
+      prev.includes(pageNumber) 
+        ? prev.filter(p => p !== pageNumber)
+        : [...prev, pageNumber]
+    );
   };
 
   const removePages = async () => {
     if (!file) {
       toast({
         title: "No file selected",
-        description: "Please select a PDF file.",
+        description: "Please select a PDF file first.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!pagesToRemove.trim()) {
+    if (pagesToRemove.length === 0) {
       toast({
-        title: "No pages specified",
-        description: "Please specify which pages to remove.",
+        title: "No pages selected",
+        description: "Please select at least one page to remove.",
         variant: "destructive",
       });
       return;
@@ -42,31 +49,34 @@ const RemovePages = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const totalPages = pdfDoc.getPageCount();
+      const sourcePdf = await PDFDocument.load(arrayBuffer);
+      const targetPdf = await PDFDocument.create();
+      
+      const totalPages = sourcePdf.getPageCount();
+      
+      // Create array of pages to keep (not remove)
+      const pagesToKeep = [];
+      for (let i = 1; i <= totalPages; i++) {
+        if (!pagesToRemove.includes(i)) {
+          pagesToKeep.push(i - 1); // Convert to 0-based index
+        }
+      }
 
-      // Parse page numbers to remove
-      const pagesToRemoveArray = pagesToRemove
-        .split(',')
-        .map(p => parseInt(p.trim()) - 1)
-        .filter(p => p >= 0 && p < totalPages)
-        .sort((a, b) => b - a); // Sort in descending order for removal
-
-      if (pagesToRemoveArray.length === 0) {
+      if (pagesToKeep.length === 0) {
         toast({
-          title: "Invalid page numbers",
-          description: "Please enter valid page numbers.",
+          title: "Cannot remove all pages",
+          description: "You must keep at least one page in the PDF.",
           variant: "destructive",
         });
+        setProcessing(false);
         return;
       }
 
-      // Remove pages (in reverse order to maintain indices)
-      pagesToRemoveArray.forEach(pageIndex => {
-        pdfDoc.removePage(pageIndex);
-      });
+      // Copy the pages we want to keep
+      const copiedPages = await targetPdf.copyPages(sourcePdf, pagesToKeep);
+      copiedPages.forEach(page => targetPdf.addPage(page));
 
-      const pdfBytes = await pdfDoc.save();
+      const pdfBytes = await targetPdf.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       
@@ -77,11 +87,11 @@ const RemovePages = () => {
 
       toast({
         title: "Success!",
-        description: `Removed ${pagesToRemoveArray.length} pages successfully.`,
+        description: `Removed ${pagesToRemove.length} page(s) successfully.`,
       });
 
       setFile(null);
-      setPagesToRemove('');
+      setPagesToRemove([]);
     } catch (error) {
       console.error('Error removing pages:', error);
       toast({
@@ -95,66 +105,49 @@ const RemovePages = () => {
   };
 
   const aboutContent = {
-    whatIs: "Remove Pages is a precise PDF editing tool that allows you to delete unwanted pages from your PDF documents quickly and efficiently. This free online service enables users to eliminate specific pages, blank pages, or entire sections from their PDFs without affecting the remaining content's quality or formatting. Whether you need to remove confidential information, delete advertising pages, or clean up unnecessary content, our tool provides an easy solution for document refinement.",
-    uses: [
-      "Removing blank or unnecessary pages from scanned documents",
-      "Deleting confidential or sensitive pages before sharing documents",
-      "Eliminating advertising pages from downloaded PDF brochures or catalogs",
-      "Removing cover pages or appendices when only main content is needed",
-      "Deleting outdated sections from policy documents or manuals",
-      "Removing error pages or corrupted sections from large documents",
-      "Eliminating duplicate pages that may have occurred during scanning",
-      "Cleaning up presentation files by removing backup or draft slides"
-    ],
-    whyUse: "Our Remove Pages tool offers precise control over your PDF content with professional-grade reliability. Unlike basic PDF editors that may alter formatting or quality, our tool maintains the integrity of remaining pages while cleanly removing unwanted content. The process is secure and private – your documents are processed entirely in your browser without any server uploads. You can specify exact page numbers or ranges, making it easy to remove multiple non-consecutive pages in a single operation. The tool preserves all original formatting, links, and metadata of the remaining pages.",
-    howToUse: [
-      "Upload your PDF file using the drag-and-drop interface or file browser",
-      "Enter the page numbers you want to remove (e.g., '2, 5, 8-10' for multiple pages)",
-      "Review your page selection to ensure you're removing the correct pages",
-      "Click the 'Remove Pages' button to begin processing your document",
-      "Wait for the processing to complete - usually takes just a few seconds",
-      "Download the cleaned PDF file with unwanted pages removed"
-    ],
-    example: "Suppose you have a 20-page product catalog PDF, but pages 3, 7, and 15-17 contain outdated information that you need to remove before sharing with customers. Using our Remove Pages tool, you would upload the file and enter '3, 7, 15-17' in the page specification field. The tool will process your request and generate a new 15-page PDF with only the current, relevant information intact, maintaining all original formatting and image quality."
+    whatIs: "Remove Pages allows you to delete unwanted pages from PDF documents, creating a cleaner, more focused document.",
+    uses: ["Removing blank pages", "Deleting irrelevant sections", "Creating focused excerpts", "Cleaning up scanned documents"],
+    whyUse: "Efficiently remove unwanted content while preserving the original document structure and formatting.",
+    howToUse: ["Upload PDF", "Select pages to remove", "Preview changes", "Download cleaned PDF"],
+    example: "Remove the first 3 pages and last 2 pages from a 20-page document to focus on the main content."
   };
 
   return (
     <PDFToolTemplate
       title="Remove Pages"
-      description="Delete unwanted pages from your PDF documents. Clean and precise page removal."
+      description="Delete unwanted pages from PDF documents."
       icon={Trash2}
-      keywords="remove PDF pages, delete PDF pages, PDF page remover, edit PDF pages"
+      keywords="remove PDF pages, delete PDF pages, PDF page removal"
       aboutContent={aboutContent}
     >
       <div className="space-y-6">
-        <PDFUploader onFileSelect={handleFileSelect} />
+        <PDFUploader 
+          onFileSelect={handleFileSelect}
+          showPreview={true}
+          previewMode="delete"
+          onPageDelete={handlePageDelete}
+        />
         
-        {file && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="pagesToRemove">Pages to remove (e.g., 1, 3, 5-7)</Label>
-              <Input
-                id="pagesToRemove"
-                value={pagesToRemove}
-                onChange={(e) => setPagesToRemove(e.target.value)}
-                placeholder="Enter page numbers separated by commas"
-              />
-              <p className="text-sm text-muted-foreground">
-                Use commas to separate individual pages and hyphens for ranges (e.g., 1, 3-5, 8)
+        {pagesToRemove.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-2 text-destructive">Pages to Remove</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                {pagesToRemove.length} page(s) selected for removal: {pagesToRemove.sort((a, b) => a - b).join(', ')}
               </p>
-            </div>
-          </div>
+              <div className="flex justify-center">
+                <Button 
+                  onClick={removePages}
+                  disabled={!file || processing || pagesToRemove.length === 0}
+                  variant="destructive"
+                  size="lg"
+                >
+                  {processing ? "Removing..." : `Remove ${pagesToRemove.length} Page${pagesToRemove.length !== 1 ? 's' : ''}`}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
-        
-        <div className="flex justify-center">
-          <Button 
-            onClick={removePages}
-            disabled={!file || processing || !pagesToRemove.trim()}
-            size="lg"
-          >
-            {processing ? "Removing Pages..." : "Remove Pages"}
-          </Button>
-        </div>
       </div>
     </PDFToolTemplate>
   );
