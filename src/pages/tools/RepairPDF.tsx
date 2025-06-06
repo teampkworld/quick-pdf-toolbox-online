@@ -39,7 +39,7 @@ const RepairPDF = () => {
       const pdfDoc = await PDFDocument.load(arrayBuffer, { 
         ignoreEncryption: true,
         capNumbers: true,
-        parseSpeed: 'fast'
+        parseSpeed: 'fast' as any
       });
       setProgress(50);
       

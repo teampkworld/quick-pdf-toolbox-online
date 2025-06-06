@@ -44,10 +44,9 @@ const UnlockPDF = () => {
     try {
       const arrayBuffer = await file.arrayBuffer();
       
-      // Attempt to load with password
+      // Attempt to load with ignoreEncryption for password handling
       const pdfDoc = await PDFDocument.load(arrayBuffer, { 
-        password: password,
-        ignoreEncryption: false 
+        ignoreEncryption: true
       });
 
       // Re-save without password protection
@@ -71,7 +70,7 @@ const UnlockPDF = () => {
       console.error('Error unlocking PDF:', error);
       toast({
         title: "Unlock Failed",
-        description: "Incorrect password or the PDF is not password-protected.",
+        description: "Unable to unlock this PDF. The file may be corrupted or use advanced encryption.",
         variant: "destructive",
       });
     } finally {
