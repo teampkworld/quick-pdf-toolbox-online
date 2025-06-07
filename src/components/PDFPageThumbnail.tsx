@@ -1,10 +1,13 @@
 
 import { useState } from 'react';
-import { Page } from 'react-pdf';
+import { Page, pdfjs } from 'react-pdf';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, RotateCw, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Ensure worker is configured
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
 
 interface PDFPageThumbnailProps {
   pageNumber: number;
@@ -33,13 +36,13 @@ const PDFPageThumbnail = ({
   const [hasError, setHasError] = useState(false);
 
   const handleLoadSuccess = () => {
-    console.log(`Page ${pageNumber} loaded successfully`);
+    console.log(`PDFPageThumbnail: Page ${pageNumber} loaded successfully`);
     setIsLoading(false);
     setHasError(false);
   };
 
   const handleLoadError = (error: any) => {
-    console.error(`Error loading page ${pageNumber}:`, error);
+    console.error(`PDFPageThumbnail: Error loading page ${pageNumber}:`, error);
     setIsLoading(false);
     setHasError(true);
   };

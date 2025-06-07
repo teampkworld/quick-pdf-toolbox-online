@@ -1,18 +1,10 @@
 
 import { GlobalWorkerOptions } from 'pdfjs-dist';
 
-// Configure PDF.js worker for Vite build system
+// Configure PDF.js worker with the correct CDN URL
 if (typeof window !== 'undefined') {
-  GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.js',
-    import.meta.url
-  ).toString();
+  GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
 }
-
-// Set options for react-pdf
-export const pdfjs = {
-  GlobalWorkerOptions
-};
 
 // Export for use in components
 export { GlobalWorkerOptions };

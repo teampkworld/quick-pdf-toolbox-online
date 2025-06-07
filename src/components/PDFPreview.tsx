@@ -1,13 +1,15 @@
 
 import { useState, useEffect } from 'react';
-import { Document } from 'react-pdf';
+import { Document, pdfjs } from 'react-pdf';
 import PDFPageThumbnail from './PDFPageThumbnail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, FileText } from 'lucide-react';
-import { pdfjs } from '../lib/pdfWorker';
 
-// Configure react-pdf options
+// Configure react-pdf with correct worker
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
+
+// Import CSS for react-pdf
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -38,6 +40,7 @@ const PDFPreview = ({
   const [fileUrl, setFileUrl] = useState<string>('');
 
   useEffect(() => {
+    console.log('PDFPreview: Setting up file URL for:', file.name);
     // Create object URL for the file
     const url = URL.createObjectURL(file);
     setFileUrl(url);
@@ -51,14 +54,14 @@ const PDFPreview = ({
   }, [file]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    console.log('PDF loaded successfully with', numPages, 'pages');
+    console.log('PDFPreview: PDF loaded successfully with', numPages, 'pages');
     setNumPages(numPages);
     setIsLoading(false);
     setError(null);
   };
 
   const onDocumentLoadError = (error: any) => {
-    console.error('Error loading PDF:', error);
+    console.error('PDFPreview: Error loading PDF:', error);
     setError('Failed to load PDF. The file might be corrupted or password-protected.');
     setIsLoading(false);
   };

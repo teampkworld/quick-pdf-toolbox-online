@@ -4,8 +4,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Import PDF worker configuration
-import './lib/pdfWorker';
+// Import and configure PDF worker
+import { pdfjs } from 'react-pdf';
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
 
 const container = document.getElementById("root");
 if (!container) {
