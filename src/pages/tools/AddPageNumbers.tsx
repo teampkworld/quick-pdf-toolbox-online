@@ -15,8 +15,8 @@ const AddPageNumbers = () => {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [position, setPosition] = useState('bottom-center');
-  const [format, setFormat] = useState('number');
   const [startNumber, setStartNumber] = useState(1);
+  const [fontSize, setFontSize] = useState(12);
   const { toast } = useToast();
 
   const handleFileSelect = (selectedFile: File) => {
@@ -45,34 +45,20 @@ const AddPageNumbers = () => {
         const { width, height } = page.getSize();
         const pageNumber = startNumber + index;
         
-        let text = '';
-        switch (format) {
-          case 'number':
-            text = pageNumber.toString();
-            break;
-          case 'page-number':
-            text = `Page ${pageNumber}`;
-            break;
-          case 'number-total':
-            text = `${pageNumber} of ${pages.length}`;
-            break;
-          case 'page-number-total':
-            text = `Page ${pageNumber} of ${pages.length}`;
-            break;
-        }
-
-        let x = 0, y = 0;
+        let x, y;
+        
+        // Determine position
         switch (position) {
           case 'top-left':
             x = 50;
             y = height - 50;
             break;
           case 'top-center':
-            x = width / 2 - (text.length * 3);
+            x = width / 2 - 10;
             y = height - 50;
             break;
           case 'top-right':
-            x = width - 100;
+            x = width - 50;
             y = height - 50;
             break;
           case 'bottom-left':
@@ -80,19 +66,22 @@ const AddPageNumbers = () => {
             y = 50;
             break;
           case 'bottom-center':
-            x = width / 2 - (text.length * 3);
+            x = width / 2 - 10;
             y = 50;
             break;
           case 'bottom-right':
-            x = width - 100;
+            x = width - 50;
             y = 50;
             break;
+          default:
+            x = width / 2 - 10;
+            y = 50;
         }
 
-        page.drawText(text, {
+        page.drawText(pageNumber.toString(), {
           x,
           y,
-          size: 12,
+          size: fontSize,
           font,
           color: rgb(0, 0, 0),
         });
@@ -109,7 +98,7 @@ const AddPageNumbers = () => {
 
       toast({
         title: "Success!",
-        description: "Page numbers added successfully and PDF downloaded.",
+        description: `Added page numbers to ${pages.length} pages.`,
       });
 
       setFile(null);
@@ -126,19 +115,19 @@ const AddPageNumbers = () => {
   };
 
   const aboutContent = {
-    whatIs: "Add Page Numbers automatically inserts customizable page numbers to your PDF documents with various formatting options.",
-    uses: ["Document organization", "Report formatting", "Academic papers", "Legal documents"],
-    whyUse: "Flexible positioning and formatting options with support for different numbering styles.",
-    howToUse: ["Upload PDF", "Choose position", "Select format", "Add page numbers"],
-    example: "Add sequential page numbers to a technical manual for easy reference and navigation."
+    whatIs: "Add Page Numbers automatically inserts sequential page numbers to PDF documents with customizable positioning and formatting.",
+    uses: ["Document organization", "Professional formatting", "Academic papers", "Legal documents"],
+    whyUse: "Customizable positioning, font size, and starting number options for professional document formatting.",
+    howToUse: ["Upload PDF", "Choose position", "Set starting number", "Download numbered PDF"],
+    example: "Add page numbers to a thesis document starting from page 3 in the bottom-right corner."
   };
 
   return (
     <PDFToolTemplate
       title="Add Page Numbers"
-      description="Add custom page numbers to your PDFs."
+      description="Add sequential page numbers to PDF documents."
       icon={Hash}
-      keywords="add page numbers, PDF numbering, page formatting"
+      keywords="add page numbers, PDF numbering, page numbering tool"
       aboutContent={aboutContent}
     >
       <div className="space-y-6">
@@ -154,7 +143,7 @@ const AddPageNumbers = () => {
                   <Label>Position</Label>
                   <Select value={position} onValueChange={setPosition}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select position" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="top-left">Top Left</SelectItem>
@@ -166,25 +155,22 @@ const AddPageNumbers = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label>Format</Label>
-                  <Select value={format} onValueChange={setFormat}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="number">1, 2, 3...</SelectItem>
-                      <SelectItem value="page-number">Page 1, Page 2...</SelectItem>
-                      <SelectItem value="number-total">1 of 10, 2 of 10...</SelectItem>
-                      <SelectItem value="page-number-total">Page 1 of 10...</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="fontSize">Font Size</Label>
+                  <Input
+                    id="fontSize"
+                    type="number"
+                    min="8"
+                    max="24"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(parseInt(e.target.value) || 12)}
+                  />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="startNumber">Start Number</Label>
+                <Label htmlFor="startNumber">Starting Number</Label>
                 <Input
                   id="startNumber"
                   type="number"
