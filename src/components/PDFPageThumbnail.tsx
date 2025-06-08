@@ -7,7 +7,12 @@ import { CheckCircle, RotateCw, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Ensure worker is configured
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
+if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.js',
+    import.meta.url,
+  ).toString();
+}
 
 interface PDFPageThumbnailProps {
   pageNumber: number;
@@ -71,6 +76,11 @@ const PDFPageThumbnail = ({
                 <span className="text-sm text-muted-foreground">Loading...</span>
               </div>
             }
+            onRenderError={(error) => {
+              console.error(`PDFPageThumbnail: Render error for page ${pageNumber}:`, error);
+              setHasError(true);
+              setIsLoading(false);
+            }}
           />
         )}
         

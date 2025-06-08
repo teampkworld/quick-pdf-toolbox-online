@@ -8,8 +8,16 @@ import './index.css';
 // Import and configure PDF worker
 import { pdfjs } from 'react-pdf';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
+// Configure PDF.js worker with absolute URL
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
+
+// Also set the legacy way for compatibility
+if (typeof window !== 'undefined') {
+  window.pdfjsLib = pdfjs;
+}
 
 const container = document.getElementById("root");
 if (!container) {

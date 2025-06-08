@@ -4,10 +4,15 @@ import { Document, pdfjs } from 'react-pdf';
 import PDFPageThumbnail from './PDFPageThumbnail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, FileText } from 'lucide-react';
+import { AlertCircle, FileText, RefreshCw } from 'lucide-react';
 
-// Configure react-pdf with correct worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
+// Ensure worker is configured
+if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.js',
+    import.meta.url,
+  ).toString();
+}
 
 // Import CSS for react-pdf
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -38,12 +43,16 @@ const PDFPreview = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fileUrl, setFileUrl] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     console.log('PDFPreview: Setting up file URL for:', file.name);
     // Create object URL for the file
     const url = URL.createObjectURL(file);
     setFileUrl(url);
+    setError(null);
+    setIsLoading(true);
+    setRetryCount(0);
     
     // Cleanup on unmount
     return () => {
@@ -62,8 +71,21 @@ const PDFPreview = ({
 
   const onDocumentLoadError = (error: any) => {
     console.error('PDFPreview: Error loading PDF:', error);
-    setError('Failed to load PDF. The file might be corrupted or password-protected.');
+    setError('Failed to load PDF. The file might be corrupted, password-protected, or there was a worker loading issue.');
     setIsLoading(false);
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setError(null);
+    setIsLoading(true);
+    
+    // Force reload the file URL
+    if (fileUrl) {
+      URL.revokeObjectURL(fileUrl);
+    }
+    const newUrl = URL.createObjectURL(file);
+    setFileUrl(newUrl);
   };
 
   const handlePageSelect = (pageNumber: number) => {
@@ -94,7 +116,11 @@ const PDFPreview = ({
         <CardContent className="p-6 text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Preview Error</h3>
-          <p className="text-muted-foreground">{error}</p>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={handleRetry} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry Loading
+          </Button>
         </CardContent>
       </Card>
     );
@@ -131,6 +157,9 @@ const PDFPreview = ({
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading PDF preview...</p>
+            {retryCount > 0 && (
+              <p className="text-sm text-muted-foreground mt-2">Retry attempt: {retryCount}</p>
+            )}
           </div>
         ) : (
           <Document
@@ -139,9 +168,10 @@ const PDFPreview = ({
             onLoadError={onDocumentLoadError}
             loading=""
             options={{
-              cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+              cMapUrl: new URL('pdfjs-dist/cmaps/', import.meta.url).toString(),
               cMapPacked: true,
-              standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+              standardFontDataUrl: new URL('pdfjs-dist/standard_fonts/', import.meta.url).toString(),
+              verbosity: 0,
             }}
           >
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -161,7 +191,7 @@ const PDFPreview = ({
             </div>
           </Document>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 };
