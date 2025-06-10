@@ -191,7 +191,7 @@ const PDFPreview = ({
             </div>
           </Document>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 };
