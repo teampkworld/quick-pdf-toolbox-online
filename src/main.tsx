@@ -14,11 +14,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-// Also set the legacy way for compatibility
-if (typeof window !== 'undefined') {
-  window.pdfjsLib = pdfjs;
-}
-
 const container = document.getElementById("root");
 if (!container) {
   throw new Error("Root element not found");
