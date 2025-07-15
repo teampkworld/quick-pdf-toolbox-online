@@ -6,13 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, FileText, RefreshCw } from 'lucide-react';
 
-// Ensure worker is configured
-if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.js',
-    import.meta.url,
-  ).toString();
-}
+// Worker is configured in main.tsx
 
 // Import CSS for react-pdf
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -168,9 +162,9 @@ const PDFPreview = ({
             onLoadError={onDocumentLoadError}
             loading=""
             options={{
-              cMapUrl: new URL('pdfjs-dist/cmaps/', import.meta.url).toString(),
+              cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
               cMapPacked: true,
-              standardFontDataUrl: new URL('pdfjs-dist/standard_fonts/', import.meta.url).toString(),
+              standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
               verbosity: 0,
             }}
           >
